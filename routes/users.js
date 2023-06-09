@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken');
 const router = express.Router();
+const { Converter } = AWS.DynamoDB;
 
 
 // Create a DynamoDB service object
@@ -179,23 +180,23 @@ router.get(`/users`, (req, res) =>{
             console.log(err);
             res.send(err)
           } else if (data.Items.length === 0) {
-            console.log('User not found in DynamoDB');
+            res.send('User not found in DynamoDB');
           } else {
             const user = data.Items[0];
             // Compare the user's entered password with the hashed password in DynamoDB
             bcrypt.compare((req.body.password), user.password['S'], (err, result) => {
               console.log((req.body.password), user.password['S'], result);
               if (err) {
-                console.log('Error comparing passwords: ', err);
+              res.send('Error comparing passwords: ', err);
               } else if (result === true) {
-                console.log('Passwords match!');
+                res.send('Passwords match!');
                 const token = jwt.sign({ userId: user.id }, 'secret_key', { expiresIn: '1h' });
                 console.log(token);
   
-                res.send({user:user, token:token})
+                res.send({user:Converter.unmarshall(user), token:token})
                 // Login successful, perform further actions
               } else {
-                console.log('Passwords do not match!');
+                res.send('Passwords do not match!');
                 // Login failed, handle the error
               }
             });

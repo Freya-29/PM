@@ -72,4 +72,50 @@ router.post('/campaigns', (req, res) => {
     });
     });
 
+    router.get('/campaigns/mail/:id', function (req, res) {
+      var reviewers;
+      var userId = req.params.id;
+      var params = {
+            TableName : "Campaign",
+            KeyConditionExpression: "#id = :id" ,
+            ExpressionAttributeNames:{
+                "#id": "id"
+            },
+            ExpressionAttributeValues: {
+                ":id": userId
+            }
+        };
+        docClient.query(params, function(err, data) {
+          if (err) {
+              console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+          } else {
+              console.log("Query succeeded.");
+              res.send(data.Items[0].reviewers);
+              reviewers = data.Items[0].reviewers
+              reviewers.forEach(element => {
+                var params = {
+                  TableName : "Employee",
+                  KeyConditionExpression: "#id = :id" ,
+                  ExpressionAttributeNames:{
+                      "#id": "id"
+                  },
+                  ExpressionAttributeValues: {
+                      ":id": element
+                  }
+              };
+              docClient.query(params, function(err, data){
+                if(err){
+                  console.log(err);
+                } else{
+                  console.log(data['Items'][0]['email']);
+                  ///sending email:-------------------
+                }
+              })
+
+
+              });
+          }
+      });
+      });
+
 module.exports = router;

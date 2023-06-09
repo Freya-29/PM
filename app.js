@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv/config');
 const base = 'http://10.62.0.60:8080'
 const http = require('http')
+const cors = require('cors');
 
 AWS.config.update({
   region: 'ap-south-1',
@@ -21,6 +22,7 @@ var docClient = new AWS.DynamoDB.DocumentClient();
 
 //middleware
 app.use(express.json());
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
 //Routes
