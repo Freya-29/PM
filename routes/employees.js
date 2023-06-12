@@ -23,7 +23,7 @@ router.post('/employees', async function (req, res) {
         TableName: "Employee"
     }
 
-    docClient.query(employeeParams, async(err, data) => {
+    docClient.query(employeeParams, async (err, data) => {
         if (err) {
             console.error(err);
             res.status(500).json({ error: 'Internal server error' });
@@ -41,7 +41,7 @@ router.post('/employees', async function (req, res) {
             var departmentDetail = await docClient.query(deprtmnt).promise();
             console.log("DepartmentDetail" + JSON.stringify(departmentDetail));
             console.log("DepartmentDetailID" + JSON.stringify(departmentDetail.Items[0].id));
-        
+
             var designation = {
                 IndexName: "designationIndex",
                 KeyConditionExpression: 'designationName = :name',
@@ -53,7 +53,7 @@ router.post('/employees', async function (req, res) {
             var designationDetail = await docClient.query(designation).promise();
             console.log("DesignationDetail" + JSON.stringify(designationDetail));
             console.log("DesignationDetailID" + JSON.stringify(designationDetail.Items[0].id));
-        
+
             const employeeItem = {
                 TableName: "Employee",
                 Item: {
@@ -68,7 +68,7 @@ router.post('/employees', async function (req, res) {
                     type: "EMPLOYEE"
                 }
             };
-        
+
             docClient.put(employeeItem, function (err, data) {
                 if (err) {
                     console.error("Unable to add Name. Error JSON:", JSON.stringify(err, null, 2));
@@ -78,38 +78,79 @@ router.post('/employees', async function (req, res) {
                     return res.send(data);
                 }
             });
- } })
+        }
+    })
 
-   
+
 })
 
 // get employee
-  router.get(`/employees`, (req, res) =>{
+router.get(`/employees`, (req, res) => {
     const params = {
-      TableName : "Employee"
+      TableName: "Employee"
     };
-  docClient.scan(params, (err, data) => {
+  
+    docClient.scan(params, async (err, data) => {
       if (err) {
-          console.error("Unable to scan the table. Error JSON:", JSON.stringify(err, null, 2));
+        console.error("Unable to scan the table. Error JSON:", JSON.stringify(err, null, 2));
+        res.status(500).send("Error retrieving employee data");
       } else {
-          res.send(data);
+        try {
+          const employees = data.Items;
+  
+          const modifiedEmployees = await Promise.all(employees.map(async (element) => {
+            const departmentId = element.department;
+            const departmentParams = {
+              TableName: "Department",
+              KeyConditionExpression: "#id = :id",
+              ExpressionAttributeNames: {
+                "#id": "id"
+              },
+              ExpressionAttributeValues: {
+                ":id": departmentId
+              }
+            };
+  
+            const departmentData = await new Promise((resolve, reject) => {
+              docClient.query(departmentParams, (err, data2) => {
+                if (err) {
+                  console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+                  reject(err);
+                } else {
+                  console.log("Query succeeded.");
+                  console.log(data2['Items'][0]['departmentName']);
+                  resolve(data2['Items'][0]['departmentName']);
+                }
+              });
+            });
+  
+            element.department = departmentData;
+            return element;
+          }));
+  
+          console.log(modifiedEmployees);
+          res.send(modifiedEmployees);
+        } catch (error) {
+          console.error("Error processing employee data:", error);
+          res.status(500).send("Error processing employee data");
+        }
       }
-    })
-  })
+    });
+  });
 
-  router.get('/employees/:id', function (req, res) {
+router.get('/employees/:id', function (req, res) {
     var userId = req.params.id;
     var params = {
-          TableName : "Employee",
-          KeyConditionExpression: "#id = :id" ,
-          ExpressionAttributeNames:{
-              "#id": "id"
-          },
-          ExpressionAttributeValues: {
-              ":id": userId
-          }
-      };
-      docClient.query(params, function(err, data) {
+        TableName: "Employee",
+        KeyConditionExpression: "#id = :id",
+        ExpressionAttributeNames: {
+            "#id": "id"
+        },
+        ExpressionAttributeValues: {
+            ":id": userId
+        }
+    };
+    docClient.query(params, function (err, data) {
         if (err) {
             console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
         } else {
@@ -117,30 +158,30 @@ router.post('/employees', async function (req, res) {
             res.send(data)
         }
     });
-    });
-  
+});
 
-    // delete employee
-    router.delete('/employees/:id', function (req, res) {
-      var userId = req.params.id;
-      var params = {
-            TableName : "Employee",
-            Key: {
-              "id": userId
-            }
-        };
-        docClient.delete(params, function(err, data) {
-          if (err) {
-              console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
-          }else{
+
+// delete employee
+router.delete('/employees/:id', function (req, res) {
+    var userId = req.params.id;
+    var params = {
+        TableName: "Employee",
+        Key: {
+            "id": userId
+        }
+    };
+    docClient.delete(params, function (err, data) {
+        if (err) {
+            console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+        } else {
             res.send(data);
-          }
-      });
-      });
+        }
+    });
+});
 
 
-      //create a Department
-      router.post('/department', function (req, res) {
+//create a Department
+router.post('/department', function (req, res) {
 
     var departmentParams = {
         IndexName: "DepartmentIndex",
@@ -175,12 +216,13 @@ router.post('/employees', async function (req, res) {
                     return res.send(data);
                 }
             });
- } })
+        }
+    })
 
 })
 
 
-      //get department
+//get department
 router.get('/department', function (req, res) {
     docClient.scan({ TableName: "Department" }, function (err, data) {
         if (err) {
@@ -272,7 +314,7 @@ router.post('/designation', function (req, res) {
                     canReview: req.body.canReview
                 }
             };
-        
+
             docClient.put(designationItem, function (err, data) {
                 if (err) {
                     console.error("Unable to add Name. Error JSON:", JSON.stringify(err, null, 2));
@@ -282,8 +324,9 @@ router.post('/designation', function (req, res) {
                     return res.send(data);
                 }
             });
- } })
-   
+        }
+    })
+
 })
 
 //get designation

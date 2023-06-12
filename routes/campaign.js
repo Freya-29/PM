@@ -6,10 +6,43 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken');
 const router = express.Router();
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+  
+  host: 'smtp.gmail.com', // Replace with your SMTP host
+  port: 587, // Replace with your SMTP port
+  secure: false, // Set to true if using a secure connection
+  auth: {
+    user: 'freya19beceg147@gmail.com', // Replace with your email address
+    pass: 'freya@29' // Replace with your email password or app password
+  }
+});
 
 
 const dynamodb = new AWS.DynamoDB();
 var docClient = new AWS.DynamoDB.DocumentClient();
+
+router.post('/send-email', (req, res) => {
+  const { subject, content, recipients } = req.body;
+
+  const mailOptions = {
+    from: 'hetviparikh29@gmail.com', // Replace with your email address
+    to: recipients,
+    subject,
+    text: content
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Error sending email:', error);
+      res.status(500).send('Error sending email');
+    } else {
+      console.log('Email sent:', info.response);
+      res.sendStatus(200);
+    }
+  });
+});
 
 
 router.post('/campaigns', (req, res) => {

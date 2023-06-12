@@ -189,7 +189,7 @@ router.get(`/users`, (req, res) =>{
               if (err) {
               res.send('Error comparing passwords: ', err);
               } else if (result === true) {
-                res.send('Passwords match!');
+                // res.send('Passwords match!');
                 const token = jwt.sign({ userId: user.id }, 'secret_key', { expiresIn: '1h' });
                 console.log(token);
   
