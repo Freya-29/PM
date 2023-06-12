@@ -14,8 +14,8 @@ const transporter = nodemailer.createTransport({
   port: 587, // Replace with your SMTP port
   secure: false, // Set to true if using a secure connection
   auth: {
-    user: 'freya19beceg147@gmail.com', // Replace with your email address
-    pass: 'freya@29' // Replace with your email password or app password
+    user: '', // Replace with your email address
+    pass: '' // Replace with your email password or app password
   }
 });
 
@@ -27,7 +27,7 @@ router.post('/send-email', (req, res) => {
   const { subject, content, recipients } = req.body;
 
   const mailOptions = {
-    from: 'hetviparikh29@gmail.com', // Replace with your email address
+    from: '', // Replace with your email address
     to: recipients,
     subject,
     text: content
