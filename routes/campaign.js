@@ -7,6 +7,8 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const nodemailer = require('nodemailer');
+const axios = require('axios');
+const {Converter} = AWS.DynamoDB;
 
 const transporter = nodemailer.createTransport({
   
@@ -14,8 +16,8 @@ const transporter = nodemailer.createTransport({
   port: 587, // Replace with your SMTP port
   secure: false, // Set to true if using a secure connection
   auth: {
-    user: '', // Replace with your email address
-    pass: '' // Replace with your email password or app password
+    user: 'fmh.sgp@gmail.com', // Replace with your email address
+    pass: 'ajosjbiwppeqmcyy' // Replace with your email password or app password
   }
 });
 
@@ -23,12 +25,16 @@ const transporter = nodemailer.createTransport({
 const dynamodb = new AWS.DynamoDB();
 var docClient = new AWS.DynamoDB.DocumentClient();
 
+// var recipients = ["freya.190410107118@gmail.com"];
+
 router.post('/send-email', (req, res) => {
-  const { subject, content, recipients } = req.body;
+  const { subject, content   } = req.body;
+  const recipients1 = req.body.recipients
+
 
   const mailOptions = {
-    from: '', // Replace with your email address
-    to: recipients,
+    from: 'fmh.sgp@gmail.com', // Replace with your email address
+    to: recipients1,
     subject,
     text: content
   };
@@ -56,18 +62,35 @@ router.post('/campaigns', (req, res) => {
           startedBy: req.body.startedBy,
           for: req.body.for,
           reviewers: req.body.reviewers,
-          active: false
+          active: req.body.active
         }
       };
       docClient.put(params, (err, data) => {
         if (err) {
           res.status(500).send(err);
         } else {
-          return res.send(data);
+          console.log(params.Item);
+          return res.send(params.Item);
         }
       });
   });
 
+  router.delete('/campaign/:id', function (req, res) {
+    var campaignId = req.params.id;
+    var params = {
+        TableName: "Campaign",
+        Key: {
+            "id": campaignId
+        }
+    };
+    docClient.delete(params, function (err, data) {
+        if (err) {
+            console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+        } else {
+            res.send(data);
+        }
+    });
+});
 
   router.get(`/campaigns`, (req, res) =>{
     const params = {
@@ -107,7 +130,7 @@ router.post('/campaigns', (req, res) => {
 
     router.get('/campaigns/mail/:id', function (req, res) {
       var reviewers;
-      var userId = req.params.id;
+      var campaignId = req.params.id;
       var params = {
             TableName : "Campaign",
             KeyConditionExpression: "#id = :id" ,
@@ -115,7 +138,7 @@ router.post('/campaigns', (req, res) => {
                 "#id": "id"
             },
             ExpressionAttributeValues: {
-                ":id": userId
+                ":id": campaignId
             }
         };
         docClient.query(params, function(err, data) {
@@ -126,6 +149,7 @@ router.post('/campaigns', (req, res) => {
               res.send(data.Items[0].reviewers);
               reviewers = data.Items[0].reviewers
               reviewers.forEach(element => {
+                var recipients = [];
                 var params = {
                   TableName : "Employee",
                   KeyConditionExpression: "#id = :id" ,
@@ -136,19 +160,59 @@ router.post('/campaigns', (req, res) => {
                       ":id": element
                   }
               };
-              docClient.query(params, function(err, data){
+              docClient.query(params, async function(err, data){
                 if(err){
                   console.log(err);
                 } else{
                   console.log(data['Items'][0]['email']);
-                  ///sending email:-------------------
+                  recipients.push({
+                    formLink: 'http://localhost:4200/form/' + data['Items'][0].id,
+                    email: data['Items'][0]['email']
+                  })
+                  console.log(recipients[0]);
+                  await sendemail(recipients[0]);
                 }
               })
 
 
               });
+              // const postData = {
+              //   subject: 'John Doe',
+              //   content: 'hello',
+              //   recipients: recipients
+              // };
+              
+              // // Make a POST request
+              // axios.post('http://localhost:3000/api/send-email', postData)
+              //   .then(response => {
+              //     // Handle the response data
+              //     console.log(response.data);
+              //   })
+              //   .catch(error => {
+              //     // Handle the error
+              //     console.error(error);
+              //   });
           }
       });
       });
+
+function sendemail(params) {
+  const postData = {
+      subject: 'John Doe',
+      content: params.formLink,
+      recipients: params.email
+    };
+    
+    // Make a POST request
+    axios.post('http://localhost:3000/api/send-email', postData)
+      .then(response => {
+        // Handle the response data
+        console.log(response.data);
+      })
+      .catch(error => {
+        // Handle the error
+        console.error(error);
+      });
+}
 
 module.exports = router;
