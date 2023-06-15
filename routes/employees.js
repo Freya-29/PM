@@ -57,7 +57,7 @@ router.post('/employees', async function (req, res) {
             const employeeItem = {
                 TableName: "Employee",
                 Item: {
-                    id: "EMPLOYEE:: " + uuidv4(),
+                    id:  uuidv4(),
                     createdAt: new Date().toISOString(),
                     firstName: req.body.firstName,
                     lastName: req.body.lastName,

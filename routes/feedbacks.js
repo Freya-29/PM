@@ -60,27 +60,94 @@ router.get('/feedback/:id', (req, res) => {
 })
 
 router.post('/feedbacks', (req, res) => {
-
     const feedbackId = uuidv4();
-
-    const params = {
-      TableName: 'Feedback',
-      Item: {
-        id: feedbackId,
-        campaignId: req.body.campaignId,
-        for: req.body.for,
-        reviewer: req.body.reviewer,
-        review: req.body.review
-      }
+    const campaignId = req.body.campaignId;
+    const feedbackFor = req.body.for;
+    const reviewer = req.body.reviewer;
+    const scanParams = {
+        TableName: 'Feedback'
     };
-    docClient.put(params, (err, data) => {
+    
+    
+    docClient.scan(scanParams, (err, data) => {
       if (err) {
-        res.status(500).send(err);
-      } else {
-        return res.send(data);
+        return res.status(500).send(err);
       }
+  
+      const feedbackExists = data.Items.some(item => {
+        return (
+          item.campaignId === campaignId &&
+          item.for === feedbackFor &&
+          item.reviewer === reviewer
+        );
+      });
+  
+      if (feedbackExists) {
+        return res.status(400).json({ message: 'Feedback already exists' });
+      } 
+      const date = new Date(); 
+      const putParams = {
+        TableName: 'Feedback',
+        Item: {
+          id: feedbackId,
+          campaignId: campaignId,
+          for: feedbackFor,
+          reviewer: reviewer,
+          review: req.body.review,
+          date: date.toString(),
+        }
+      };
+  
+      docClient.put(putParams, (putErr, putData) => {
+        if (putErr) {
+          return res.status(500).send(putErr);
+        }
+        
+        return res.send(putData);
+      });
+    });
+  });
+
+  router.delete('/feedbacks/:id/:fid', function (req, res) {
+    var feedbackId = req.params.id;
+    var params = {
+        TableName: "Feedback",
+        Key: {
+            "id": feedbackId,
+            "for": req.params.for
+        }
+    };
+    docClient.delete(params, function (err, data) {
+        if (err) {
+            console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+        } else {
+            res.send(data);
+        }
     });
 });
+
+// router.post('/feedbacks', (req, res) => {
+
+//     const feedbackId = uuidv4();
+
+//     const params = {
+//       TableName: 'Feedback',
+//       Item: {
+//         id: feedbackId,
+//         campaignId: req.body.campaignId,
+//         for: req.body.for,
+//         reviewer: req.body.reviewer,
+//         review: req.body.review
+//       }
+//     };
+//     docClient.put(params, (err, data) => {
+//       if (err) {
+//         res.status(500).send(err);
+//       } else {
+//         return res.send(data);
+//       }
+//     });
+// });
 
 
 
