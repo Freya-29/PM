@@ -129,6 +129,8 @@ router.post('/campaigns', (req, res) => {
     });
 
     router.get('/campaigns/mail/:id', function (req, res) {
+      let param = req.query.forId;
+      console.log(param);
       var reviewers;
       var campaignId = req.params.id;
       var params = {
@@ -166,7 +168,7 @@ router.post('/campaigns', (req, res) => {
                 } else{
                   console.log(data['Items'][0]['email']);
                   recipients.push({
-                    formLink: 'http://localhost:4200/form/' + data['Items'][0].id,
+                    formLink: 'http://localhost:4200/form/' + campaignId + '/' + param + '/'  + data['Items'][0].id,
                     email: data['Items'][0]['email']
                   })
                   console.log(recipients[0]);
