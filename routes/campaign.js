@@ -54,6 +54,7 @@ router.post('/send-email', (req, res) => {
 router.post('/campaigns', (req, res) => {
 
       const campaignId = uuidv4();
+      const date = new Date();
   
       const params = {
         TableName: 'Campaign',
@@ -62,6 +63,7 @@ router.post('/campaigns', (req, res) => {
           startedBy: req.body.startedBy,
           for: req.body.for,
           reviewers: req.body.reviewers,
+          created: date.toString(),
           active: req.body.active
         }
       };
@@ -75,6 +77,75 @@ router.post('/campaigns', (req, res) => {
       });
   });
 
+
+//update campaign
+router.put('/campaigns/:id', (req, res) => {
+  const campaignId = req.params.id;
+    // index ;
+  // const neelReviewers.mpa(ele,i)=>{
+  //   ele.id === submitID
+  //   index = i
+  // }
+  const params1 = {
+    TableName : "Campaign"
+  };
+docClient.scan(params1, (err, data) => {
+    if (err) {
+        console.error("Unable to scan the table. Error JSON:", JSON.stringify(err, null, 2));
+    } else {
+        console.log('tempppp->',data);
+    }
+  })
+  const params = {
+    TableName: 'Campaign',
+    Key: {
+      id: campaignId
+    },
+    UpdateExpression: 'SET reviewers[0].issubmitted = :issubmitted',
+    ExpressionAttributeValues: {
+      ':issubmitted': req.body.issubmitted
+    },
+  };
+
+  docClient.update(params, (err, data) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      // console.log(data.Attributes);
+      return res.send(data.Attributes);
+    }
+  });
+});
+
+//update active-> deactivate
+
+router.put('/campaign/deactivate/:id', (req, res) => {
+  const campaignId = req.params.id;
+    
+  const params = {
+    TableName: 'Campaign',
+    Key: {
+      id: campaignId
+    },
+    UpdateExpression: 'SET active = :active',
+    ExpressionAttributeValues: {
+      ':active': req.body.active
+    },
+  };
+
+  docClient.update(params, (err, data) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      // console.log(data.Attributes);
+      return res.send(data.Attributes);
+    }
+  });
+});
+
+
+  
+  
   router.delete('/campaign/:id', function (req, res) {
     var campaignId = req.params.id;
     var params = {
