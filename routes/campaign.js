@@ -230,7 +230,7 @@ router.put('/campaign/deactivate/:id', (req, res) => {
                       "#id": "id"
                   },
                   ExpressionAttributeValues: {
-                      ":id": element
+                      ":id": element.id
                   }
               };
               docClient.query(params, async function(err, data){

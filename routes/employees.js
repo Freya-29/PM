@@ -65,6 +65,7 @@ router.post('/employees', async function (req, res) {
                     designation: designationDetail.Items[0].id,
                     department: departmentDetail.Items[0].id,
                     reportsTo: req.body.reportsTo,
+                    isCampaignStarted: req.body.isCampaignStarted,
                     type: "EMPLOYEE"
                 }
             };

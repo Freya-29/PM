@@ -59,7 +59,7 @@ router.get('/feedback/:id', (req, res) => {
     });
 })
 
-router.post('/feedbacks', (req, res) => {
+router.post('/feedbacks', async (req, res) => {
     const feedbackId = uuidv4();
     const campaignId = req.body.campaignId;
     const feedbackFor = req.body.for;
@@ -67,8 +67,9 @@ router.post('/feedbacks', (req, res) => {
     const scanParams = {
         TableName: 'Feedback'
     };
-    
-    
+    let index;
+    let reviewersArray = [];
+
     docClient.scan(scanParams, (err, data) => {
       if (err) {
         return res.status(500).send(err);
@@ -106,6 +107,84 @@ router.post('/feedbacks', (req, res) => {
         return res.send(putData);
       });
     });
+    
+    // particylar employee campiagn and reviewers
+    var params = {
+      TableName : "Campaign",
+      KeyConditionExpression: "#id = :id" ,
+      ExpressionAttributeNames:{
+          "#id": "id"
+      },
+      ExpressionAttributeValues: {
+          ":id": campaignId
+      }
+    };
+    await docClient.query(params, function(err, data) {
+    if (err) {
+        console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+    } else {
+        console.log("Query succeeded....");
+        reviewersArray = data.Items[0].reviewers
+        console.log('one campaign data ->',data.Items[0].reviewers);
+        reviewersArray.map((ele,i) => {
+          console.log("ele(i)-->",ele);
+          if(ele.id == reviewer){
+            console.log('temp ->',ele,reviewer);
+            index = i;
+            console.log("i-->",i);
+          }
+        })
+        console.log('index ->',index)
+    }
+});
+
+
+
+
+// // updating the feedback value
+const params1 = {
+  TableName: 'Campaign',
+  Key: {
+    id: campaignId
+  }
+};
+
+docClient.get(params1, (err, data) => {
+  if (err) {
+    console.error('Error retrieving item:', err);
+    // Handle the error
+  } else {
+    const item = data.Item;
+    
+    console.log("item--->",item);
+    // Update the element at the specified index
+    item.reviewers[index].issubmitted = true;
+    console.log("hello!");
+    // Save the updated item back to DynamoDB
+    const updateParams = {
+      TableName: 'Campaign',
+      Item: item
+    };
+
+    docClient.put(updateParams, (err, data) => {
+      if (err) {
+        console.error('Error updating item:', err);
+        // Handle the error
+      } else {
+        console.log('Item updated successfully:', data);
+        // Handle the successful update
+      }
+    });
+    console.log("put");
+  }
+});
+
+
+
+    
+
+    
+
   });
 
   router.delete('/feedbacks/:id/:fid', function (req, res) {
