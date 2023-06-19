@@ -55,7 +55,6 @@ router.post('/campaigns', (req, res) => {
 
       const campaignId = uuidv4();
       const date = new Date();
-  
       const params = {
         TableName: 'Campaign',
         Item: {

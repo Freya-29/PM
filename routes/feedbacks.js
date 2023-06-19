@@ -205,6 +205,29 @@ docClient.get(params1, (err, data) => {
     });
 });
 
+  router.get('/feedback/:eid', function(req, res){
+    var id = req.params.eid;
+    const params = {
+      TableName: 'Feedback',
+      IndexName: 'FeedbackIndex',
+      KeyConditionExpression: '#for = :value',
+      ExpressionAttributeNames: {
+        '#for': 'for'
+      },
+      ExpressionAttributeValues: {
+        ':value': id // Replace 'your-for-value' with the desired value for the "for" attribute
+      }
+    };
+    
+    dynamodb.query(params, (err, data) => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log(data); // Output: Array of items matching the query condition
+      }
+    });
+  })
+
 // router.post('/feedbacks', (req, res) => {
 
 //     const feedbackId = uuidv4();

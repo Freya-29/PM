@@ -236,6 +236,24 @@ router.get('/department', function (req, res) {
 
 })
 
+//delete department
+router.delete('/department/:id', function (req, res) {
+    var deptId = req.params.id;
+    var params = {
+        TableName: "Department",
+        Key: {
+            "id": deptId
+        }
+    };
+    docClient.delete(params, function (err, data) {
+        if (err) {
+            console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+        } else {
+            res.send(data);
+        }
+    });
+});
+
 
 // Get the employee list with department === departmentId
 router.get('/employees/department/:department', async function (req, res) {
