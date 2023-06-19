@@ -54,7 +54,7 @@ router.post('/send-email', (req, res) => {
 router.post('/campaigns', (req, res) => {
 
       const campaignId = uuidv4();
-  
+      const date = new Date();
       const params = {
         TableName: 'Campaign',
         Item: {
@@ -62,6 +62,7 @@ router.post('/campaigns', (req, res) => {
           startedBy: req.body.startedBy,
           for: req.body.for,
           reviewers: req.body.reviewers,
+          created: date.toString(),
           active: req.body.active
         }
       };
@@ -159,7 +160,7 @@ router.post('/campaigns', (req, res) => {
                       "#id": "id"
                   },
                   ExpressionAttributeValues: {
-                      ":id": element
+                      ":id": element.id
                   }
               };
               docClient.query(params, async function(err, data){
