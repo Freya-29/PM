@@ -101,6 +101,7 @@ router.get(`/employees`, (req, res) => {
   
           const modifiedEmployees = await Promise.all(employees.map(async (element) => {
             const departmentId = element.department;
+            const designationId = element.designation;
             const departmentParams = {
               TableName: "Department",
               KeyConditionExpression: "#id = :id",
@@ -111,6 +112,16 @@ router.get(`/employees`, (req, res) => {
                 ":id": departmentId
               }
             };
+            const desgparams = {
+                TableName: "Designation",
+                KeyConditionExpression: "#id = :id",
+                ExpressionAttributeNames: {
+                  "#id": "id"
+                },
+                ExpressionAttributeValues: {
+                  ":id": designationId
+                }
+              }
   
             const departmentData = await new Promise((resolve, reject) => {
               docClient.query(departmentParams, (err, data2) => {
@@ -124,8 +135,21 @@ router.get(`/employees`, (req, res) => {
                 }
               });
             });
+            const designationData = await new Promise((resolve, reject) => {
+                docClient.query(desgparams, (err, data2) => {
+                  if (err) {
+                    console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+                    reject(err);
+                  } else {
+                    console.log("Query succeeded.");
+                    console.log(data2['Items'][0]['designationName']);
+                    resolve(data2['Items'][0]['designationName']);
+                  }
+                });
+              });
   
             element.department = departmentData;
+            element.designation = designationData
             return element;
           }));
   
@@ -139,6 +163,94 @@ router.get(`/employees`, (req, res) => {
     });
   });
 
+router.put('/employee/campaign/:id', function (req, res) {
+    var userId = req.params.id;
+    var value = req.body.isCampaignStarted;
+    const params = {
+        TableName: "Employee",
+        Key: {
+          id: userId
+        },
+        UpdateExpression: "SET isCampaignStarted = :newValue",
+        ExpressionAttributeValues: {
+          ":newValue": value
+        },
+        ReturnValues: "ALL_NEW"
+      };
+  
+      docClient.update(params, async function (err, data) {
+        if (err) {
+          console.error("Unable to toggle isCampaignStarted field. Error JSON:", JSON.stringify(err, null, 2));
+          return res.send(err);
+        } else {
+          console.log("Toggle isCampaignStarted field succeeded:", data.Attributes);
+          try {
+            const employees = [data.Attributes];
+    
+            const modifiedEmployees = await Promise.all(employees.map(async (element) => {
+              const departmentId = element.department;
+              const designationId = element.designation;
+              const departmentParams = {
+                TableName: "Department",
+                KeyConditionExpression: "#id = :id",
+                ExpressionAttributeNames: {
+                  "#id": "id"
+                },
+                ExpressionAttributeValues: {
+                  ":id": departmentId
+                }
+              };
+              const desgparams = {
+                  TableName: "Designation",
+                  KeyConditionExpression: "#id = :id",
+                  ExpressionAttributeNames: {
+                    "#id": "id"
+                  },
+                  ExpressionAttributeValues: {
+                    ":id": designationId
+                  }
+                }
+    
+              const departmentData = await new Promise((resolve, reject) => {
+                docClient.query(departmentParams, (err, data2) => {
+                  if (err) {
+                    console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+                    reject(err);
+                  } else {
+                    console.log("Query succeeded.");
+                    console.log(data2['Items'][0]['departmentName']);
+                    resolve(data2['Items'][0]['departmentName']);
+                  }
+                });
+              });
+              const designationData = await new Promise((resolve, reject) => {
+                  docClient.query(desgparams, (err, data2) => {
+                    if (err) {
+                      console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+                      reject(err);
+                    } else {
+                      console.log("Query succeeded.");
+                      console.log(data2['Items'][0]['designationName']);
+                      resolve(data2['Items'][0]['designationName']);
+                    }
+                  });
+                });
+    
+              element.department = departmentData;
+              element.designation = designationData
+              return element;
+            }));
+    
+            console.log(modifiedEmployees);
+            res.send(modifiedEmployees);
+          } catch (error) {
+            console.error("Error processing employee data:", error);
+            res.status(500).send("Error processing employee data");
+          }
+        }
+      });
+})
+
 router.get('/employees/:id', function (req, res) {
     var userId = req.params.id;
     var params = {
@@ -151,12 +263,76 @@ router.get('/employees/:id', function (req, res) {
             ":id": userId
         }
     };
-    docClient.query(params, function (err, data) {
+    docClient.query(params, async function (err, data) {
         if (err) {
             console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
         } else {
             console.log("Query succeeded.");
-            res.send(data)
+            
+            try {
+                const employees = data.Items;
+        
+                const modifiedEmployees = await Promise.all(employees.map(async (element) => {
+                  const departmentId = element.department;
+                  const designationId = element.designation;
+                  const departmentParams = {
+                    TableName: "Department",
+                    KeyConditionExpression: "#id = :id",
+                    ExpressionAttributeNames: {
+                      "#id": "id"
+                    },
+                    ExpressionAttributeValues: {
+                      ":id": departmentId
+                    }
+                  };
+                  const desgparams = {
+                    TableName: "Designation",
+                    KeyConditionExpression: "#id = :id",
+                    ExpressionAttributeNames: {
+                      "#id": "id"
+                    },
+                    ExpressionAttributeValues: {
+                      ":id": designationId
+                    }
+                  }
+        
+                  const departmentData = await new Promise((resolve, reject) => {
+                    docClient.query(departmentParams, (err, data2) => {
+                      if (err) {
+                        console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+                        reject(err);
+                      } else {
+                        console.log("Query succeeded.");
+                        console.log(data2['Items'][0]['departmentName']);
+                        resolve(data2['Items'][0]['departmentName']);
+                      }
+                    });
+                  });
+
+                  const designationData = await new Promise((resolve, reject) => {
+                    docClient.query(desgparams, (err, data2) => {
+                      if (err) {
+                        console.error("Unable to query. Error:", JSON.stringify(err, null, 2));
+                        reject(err);
+                      } else {
+                        console.log("Query succeeded.");
+                        console.log(data2['Items'][0]['designationName']);
+                        resolve(data2['Items'][0]['designationName']);
+                      }
+                    });
+                  });
+        
+                  element.department = departmentData;
+                  element.designation = designationData;
+                  return element;
+                }));
+        
+                console.log(modifiedEmployees);
+                res.send(modifiedEmployees);
+              } catch (error) {
+                console.error("Error processing employee data:", error);
+                res.status(500).send("Error processing employee data");
+              }
         }
     });
 });
